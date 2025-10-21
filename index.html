@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Sensor de Presença — ESNYK</title>
+<style>
+/* ==================== RESET E ESTILO BASE ==================== */
+* {margin:0; padding:0; box-sizing:border-box;}
+body {
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background: radial-gradient(1200px 600px at 10% 20%, rgba(0,224,255,0.06), transparent 8%),
+              linear-gradient(135deg,#0f1b2a,#151933);
+  color:#eaf2ff;
+  overflow:hidden;
+  position:relative;
+}
+
+/* ==================== CONTAINER ==================== */
+.app {
+  width:100%;
+  max-width:980px;
+  border-radius:18px;
+  padding:22px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+  display:grid;
+  grid-template-columns: 340px 1fr;
+  gap:18px;
+  align-items:start;
+  position:relative;
+  z-index:10;
+}
+
+/* ==================== HEADER ==================== */
+header {
+  grid-column:1/-1;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:6px;
+}
+header h1 {margin:0; font-size:1.25rem; color:#00e0ff; display:flex; gap:10px; align-items:center;}
+header p { margin:0; color:#98a0c3; font-size:0.9rem; }
+
+/* ==================== PAINEL ==================== */
+.panel {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  padding:16px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.03);
+}
+.statusBox {
+  display:flex; flex-direction:column; gap:12px; align-items:center;
+}
+#corBox {
+  width:220px; height:220px;
+  border-radius:18px;
+  background:transparent;
+  border:4px solid rgba(255,255,255,0.06);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 30px rgba(0,0,0,0.2) inset;
+  transition:all 450ms cubic-bezier(.2,.9,.3,1);
+  position:relative;
+  overflow:hidden;
+}
+#corLabel {
+  position:absolute;
+  bottom:12px;
+  left:12px;
+  font-weight:700;
+  background: rgba(0,0,0,0.25);
+  padding:6px 10px;
+  border-radius:10px;
+  backdrop-filter: blur(4px);
+}
+
+/* ==================== ANIMAÇÕES ==================== */
+.pulse {
+  animation: pulse 1.6s infinite ease-in-out;
+  box-shadow: 0 0 20px rgba(255,255,255,0.06);
+}
+@keyframes pulse {
+  0%{ transform:scale(1); }
+  50%{ transform:scale(1.02); }
+  100%{ transform:scale(1); }
+}
+
+/* ==================== CONTROLES ==================== */
+.controls {
+  display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:10px;
+}
+.controls button{
+  background:linear-gradient(180deg,#00e0ff,#00b3d1);
+  border:none; padding:10px 12px; border-radius:10px; font-weight:700; cursor:pointer;
+  color:#002026; min-width:120px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+  transition: transform .15s, box-shadow .3s;
+}
+.controls button:hover{ box-shadow:0 8px 20px rgba(0,224,255,0.6);}
+.controls button.ghost{ background:transparent; color:#98a0c3; border:1px solid rgba(255,255,255,0.04); min-width:auto; padding:8px 10px;}
+.controls button:active{ transform:translateY(2px); }
+
+/* ==================== COLUNA DIREITA ==================== */
+.right { display:flex; flex-direction:column; gap:12px; }
+.log {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  padding:12px; border-radius:12px; height:320px; overflow:auto; border:1px solid rgba(255,255,255,0.03);
+}
+.log p { margin:8px 0; font-size:0.95rem; color:#e8f5ff; }
+.log .muted { color:#98a0c3; font-size:0.85rem; }
+
+.counters { display:flex; gap:10px; justify-content:space-between; margin-top:6px; }
+.counterCard{
+  flex:1; padding:10px; border-radius:10px; background: rgba(255,255,255,0.04); text-align:center;
+  backdrop-filter: blur(4px);
+  transition: transform .3s;
+}
+.counterCard:hover{ transform:scale(1.05);}
+.counterCard h3{ margin:0; font-size:0.8rem; color:#98a0c3; }
+.counterCard p{ margin:6px 0 0; font-size:1.2rem; font-weight:800; }
+
+/* ==================== FOOTER ==================== */
+footer.appFooter{
+  grid-column:1/-1;
+  color:#98a0c3;
+  font-size:0.85rem;
+  text-align:center;
+  padding-top:6px;
+}
+
+/* ==================== RESPONSIVO ==================== */
+@media (max-width:900px){
+  .app{ grid-template-columns: 1fr; padding:16px; }
+  #corBox{ width:180px; height:180px; }
+  .log{ height:220px; }
+}
+
+/* ==================== PARTICULAS ==================== */
+.particle{
+  position:absolute;
+  width:8px; height:8px;
+  border-radius:50%;
+  opacity:0.9;
+  pointer-events:none;
+  animation: particleMove 1.2s forwards;
+}
+@keyframes particleMove{
+  to{ transform: translate(var(--x), var(--y)) scale(0); opacity:0; }
+}
+
+/* ==================== POPUPS MOTIVACIONAIS ==================== */
+.popup{
+  position:absolute;
+  top:10%; left:50%;
+  transform:translateX(-50%);
+  background: rgba(0,0,0,0.75);
+  color:#00e0ff;
+  padding:10px 18px;
+  border-radius:12px;
+  font-weight:700;
+  font-size:1rem;
+  z-index:20;
+  animation: popupAnim 2s forwards;
+}
+@keyframes popupAnim{
+  0%{ opacity:0; transform:translate(-50%, -20px);}
+  50%{ opacity:1; transform:translate(-50%,0);}
+  100%{ opacity:0; transform:translate(-50%,-20px);}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div>
+    <h1>💡 Painel Sensor de Presença — ESNYK</h1>
+    <p>Simulação interativa com efeitos futuristas e motivação! 🚀</p>
+  </div>
+  <div style="text-align:right">
+    <p id="status">Nenhuma presença detectada</p>
+    <p class="muted" id="autoStatus">Modo automático: <b>Desligado</b></p>
+  </div>
+</header>
+
+<div class="panel">
+  <div class="statusBox">
+    <div id="corBox"><div id="corLabel">—</div></div>
+    <div class="controls">
+      <button id="detectarBtn">👀 Detectar Presença</button>
+      <button id="gerarCorBtn" class="ghost">🎨 Gerar Cor</button>
+      <button id="autoBtn">🔁 Iniciar Auto</button>
+      <button id="clearBtn" class="ghost">🧹 Limpar Log</button>
+      <button id="soundBtn" class="ghost">🔊 Som: ON</button>
+      <button id="partyBtn" class="ghost">🎉 Modo Festa</button>
+    </div>
+    <div style="margin-top:10px; width:100%; display:flex; gap:8px; justify-content:center;">
+      <div style="width:120px; text-align:center; font-size:0.9rem; color:#98a0c3">Intervalo Auto</div>
+      <input type="range" id="intervalRange" min="1" max="10" value="3" style="width:160px;">
+      <div id="intervalLabel" style="width:38px; text-align:center;">3s</div>
+    </div>
+  </div>
+</div>
+
+<div class="right">
+  <div class="log" id="log"></div>
+  <div class="counters">
+    <div class="counterCard"><h3>Vermelho</h3><p id="count-red">0</p></div>
+    <div class="counterCard"><h3>Verde</h3><p id="count-green">0</p></div>
+    <div class="counterCard"><h3>Azul</h3><p id="count-blue">0</p></div>
+    <div class="counterCard"><h3>Amarelo</h3><p id="count-yellow">0</p></div>
+    <div class="counterCard"><h3>Roxo</h3><p id="count-purple">0</p></div>
+  </div>
+</div>
+
+<footer class="appFooter">
+ESNYK • Instagram: <a href="https://www.instagram.com/primeiraodorui" target="_blank" style="color:#00e0ff;">@primeiraodorui</a>
+</footer>
+</div>
+
+<audio id="bgMusic" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop autoplay></audio>
+
+<script>
+/* ==================== DADOS ==================== */
+const cores = [
+  { nome:"Vermelho", key:"red", css:"#ff3b3b", emoji:"❤️", sound:440 },
+  { nome:"Verde", key:"green", css:"#5df27d", emoji:"🍀", sound:660 },
+  { nome:"Azul", key:"blue", css:"#5da8ff", emoji:"💙", sound:880 },
+  { nome:"Amarelo", key:"yellow", css:"#ffd66b", emoji:"🌟", sound:990 },
+  { nome:"Roxo", key:"purple", css:"#c27dff", emoji:"💜", sound:550 }
+];
+const corBox = document.getElementById('corBox');
+const corLabel = document.getElementById('corLabel');
+const statusEl = document.getElementById('status');
+const logEl = document.getElementById('log');
+const autoStatus = document.getElementById('autoStatus');
+const intervalRange = document.getElementById('intervalRange');
+const intervalLabel = document.getElementById('intervalLabel');
+const partyBtn = document.getElementById('partyBtn');
+let counts = { red:0, green:0, blue:0, yellow:0, purple:0 };
+let autoTimer = null;
+let autoOn = false;
+let soundOn = true;
+let partyOn = false;
+
+/* ==================== LOCAL STORAGE ==================== */
+function loadCounts(){
+  const saved = localStorage.getItem('henzo_counts_v2');
+  if(saved){ counts = JSON.parse(saved); }
+  updateCountersUI();
+}
+function saveCounts(){ localStorage.setItem('henzo_counts_v2', JSON.stringify(counts)); }
+
+/* ==================== ATUALIZA CONTADORES ==================== */
+function updateCountersUI(){
+  document.getElementById('count-red').innerText = counts.red;
+  document.getElementById('count-green').innerText = counts.green;
+  document.getElementById('count-blue').innerText = counts.blue;
+  document.getElementById('count-yellow').innerText = counts.yellow;
+  document.getElementById('count-purple').innerText = counts.purple;
+}
+
+/* ==================== LOG ==================== */
+function pushLog(text){
+  const time = new Date();
+  const hh = time.toLocaleTimeString();
+  const p = document.createElement('p');
+  p.innerHTML = `<span class="muted">${hh}</span> — ${text}`;
+  logEl.prepend(p);
+}
+
+/* ==================== SOM ==================== */
+let audioCtx = null;
+function playBeep(freq){
+  if(!soundOn) return;
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type='sine'; o.frequency.value=freq;
+  g.gain.value=0.12; o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime + 0.12);
+}
+
+/* ==================== POPUP MOTIVACIONAL ==================== */
+function showPopup(message){
+  const p = document.createElement('div'); p.className='popup'; p.innerText=message;
+  document.body.appendChild(p);
+  setTimeout(()=>{ p.remove(); },2000);
+}
+
+/* ==================== PARTICULAS ==================== */
+function spawnParticles(color){
+  for(let i=0;i<12;i++){
+    const particle = document.createElement('div');
+    particle.className='particle';
+    particle.style.background=color;
+    particle.style.setProperty('--x', (Math.random()*200-100)+'px');
+    particle.style.setProperty('--y', (Math.random()*200-100)+'px');
+    particle.style.left='50%';
+    particle.style.top='50%';
+    document.body.appendChild(particle);
+    setTimeout(()=>particle.remove(),1200);
+  }
+}
+
+/* ==================== GERAR LEITURA ==================== */
+function gerarLeitura(manual=true){
+  statusEl.innerText="👋 Presença detectada"; statusEl.style.color="#b8ffd6";
+  const idx = Math.floor(Math.random()*cores.length);
+  const c = cores[idx];
+  corBox.style.background = `linear-gradient(135deg, ${c.css}, rgba(0,0,0,0.12))`;
+  corLabel.innerText=`${c.nome} ${c.emoji}`; corBox.classList.add('pulse');
+  setTimeout(()=> corBox.classList.remove('pulse'),1600);
+  pushLog(`Cor detectada: <b>${c.nome} ${c.emoji}</b>`);
+  counts[c.key]++; updateCountersUI(); saveCounts();
+  playBeep(c.sound);
+  showPopup(`✨ ${c.emoji} ${["Foco!","Continue assim!","Top!","Mandou bem!","Incrível!"][Math.floor(Math.random()*5)]}`);
+  spawnParticles(c.css);
+  if(manual){ setTimeout(()=>{ statusEl.innerText="Aguardando..."; statusEl.style.color=""; },4200); }
+  if(partyOn) spawnParticles(c.css);
+}
+
+/* ==================== BOTÕES ==================== */
+document.getElementById('detectarBtn').addEventListener('click',()=>gerarLeitura(true));
+document.getElementById('gerarCorBtn').addEventListener('click',()=>gerarLeitura(true));
+document.getElementById('clearBtn').addEventListener('click',()=>{
+  if(confirm('Limpar histórico e zerar contadores?')){
+    logEl.innerHTML=''; counts={red:0,green:0,blue:0,yellow:0,purple:0};
+    updateCountersUI(); saveCounts();
+    corBox.style.background='transparent'; corLabel.innerText='—';
+    statusEl.innerText='Nenhuma presença detectada';
+  }
+});
+
+/* ==================== AUTO MODE ==================== */
+function startAuto(){ const sec=Number(intervalRange.value)||3; stopAuto();
+  autoTimer=setInterval(()=>gerarLeitura(false),sec*1000); autoOn=true;
+  autoBtn.innerText='⏹ Parar Auto'; autoStatus.innerHTML='Modo automático: <b>Ligado</b>';
+}
+function stopAuto(){ if(autoTimer) clearInterval(autoTimer); autoTimer=null; autoOn=false;
+  autoBtn.innerText='🔁 Iniciar Auto'; autoStatus.innerHTML='Modo automático: <b>Desligado</b>';
+}
+const autoBtn=document.getElementById('autoBtn');
+autoBtn.addEventListener('click',()=>{ if(!autoOn) startAuto(); else stopAuto(); });
+
+intervalRange.addEventListener('input',()=>{ intervalLabel.innerText=intervalRange.value+'s'; if(autoOn) startAuto(); });
+
+const soundBtn=document.getElementById('soundBtn');
+soundBtn.addEventListener('click',()=>{ soundOn=!soundOn; soundBtn.innerText=`🔊 Som: ${soundOn?"ON":"OFF"}`; });
+
+partyBtn.addEventListener('click',()=>{ partyOn=!partyOn; partyBtn.innerText=`🎉 Modo Festa: ${partyOn?"ON":"OFF"}`; });
+
+/* ==================== INICIALIZAÇÃO ==================== */
+loadCounts(); intervalLabel.innerText=intervalRange.value+'s';
+pushLog('<i>Painel iniciado — pronto pra detectar</i>');
+</script>
+</body>
+</html>
